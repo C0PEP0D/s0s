@@ -49,7 +49,7 @@ One should either install eigen accordingly, or adapt Eigen path in the **CMakeL
 Start by cloning this repository.
 
 ```sh
-$ git clone https://gitlab.com/rmonthil/c0pep0d.git
+$ git clone https://github.com/C0PEP0D/s0s.git
 ```
 
 ### Examples
