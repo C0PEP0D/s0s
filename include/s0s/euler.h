@@ -6,12 +6,14 @@
 
 namespace s0s {
 
+template<typename TypeVector, template<typename...> typename TypeView>
 class SolverEuler {
     public:
-        template<typename TypeFunction, typename TypeVector>
-        TypeVector operator()(const TypeFunction& f, TypeVector& x, const double& t,  const double& dt) {
+        template<typename TypeFunction>
+        void operator()(const TypeFunction& f, double* pX, std::size_t xSize, const double& t,  const double& dt) {
             assert(("dt should be greater than 0.0. Did you initialize dt ?", dt > 0.0));
-            return x + f(x, t) * dt;
+            TypeView<TypeVector> x(pX, xSize);
+            x += f(pX, t) * dt;
         }
 };
 

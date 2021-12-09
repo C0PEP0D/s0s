@@ -9,6 +9,7 @@
 
 namespace s0s {
 
+template<typename TypeVector, template<typename...> typename TypeView>
 class SolverRungeKuttaFehlberg {
     // Source : https://en.wikipedia.org/wiki/Runge-Kutta-Fehlberg_method
     public:
@@ -34,11 +35,15 @@ class SolverRungeKuttaFehlberg {
             25.0/216.0, 0.0, 1408.0/2565.0 , 2197.0/4104.0  , -1.0/5.0
         };
     public:
-        template<typename TypeFunction, typename TypeVector>
-        TypeVector operator()(const TypeFunction& f, const TypeVector& x, const double& t,  const double& dt) {
+        template<typename TypeFunction>
+        void operator()(const TypeFunction& f, double* pX, std::size_t xSize, const double& t, const double& dt) {
+            // assertion
             assert(("dt should be greater than 0.0. Did you initialize dt ?", dt > 0.0));
+            // interpret pointer as vector
+            TypeView<TypeVector> x(pX, xSize);
+            // computation
             std::array<TypeVector, 5> k;
-            k[0] = f(x, t);
+            k[0] = f(pX, t);
             TypeVector s = k[0] * b4[0];
             for(size_t i = 1; i < k.size(); i++) {
                 TypeVector v = k[0] * a[i - 1][0];
@@ -46,10 +51,10 @@ class SolverRungeKuttaFehlberg {
                     v += k[j] * a[i - 1][j];
                 }
                 v = x + v * dt;
-                k[i] = f(v, t + c[i] * dt);
+                k[i] = f(v.data(), t + c[i] * dt);
                 s += k[i] * b4[i];
             }
-            return x + s * dt;
+            x += s * dt;
         }
 };
 
