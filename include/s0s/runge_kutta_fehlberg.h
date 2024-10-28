@@ -36,14 +36,14 @@ class SolverRungeKuttaFehlberg {
         };
     public:
         template<typename TypeFunction>
-        void operator()(const TypeFunction& f, double* pX, std::size_t xSize, const double& t, const double& dt) {
+        static void step(const TypeFunction& f, double* pX, std::size_t xSize, const double& t, const double& dt) {
             // assertion
             assert(("dt should be greater than 0.0. Did you initialize dt ?", dt > 0.0));
             // interpret pointer as vector
             TypeView<TypeVector> x(pX, xSize);
             // computation
             std::array<TypeVector, 5> k;
-            k[0] = f(pX, t);
+            k[0] = f(pX, xSize, t);
             TypeVector s = k[0] * b4[0];
             for(size_t i = 1; i < k.size(); i++) {
                 TypeVector v = k[0] * a[i - 1][0];
@@ -51,10 +51,56 @@ class SolverRungeKuttaFehlberg {
                     v += k[j] * a[i - 1][j];
                 }
                 v = x + v * dt;
-                k[i] = f(v.data(), t + c[i] * dt);
+                k[i] = f(v.data(), v.size(), t + c[i] * dt);
                 s += k[i] * b4[i];
             }
             x += s * dt;
+        }
+
+        template<typename TypeFunction>
+        static void step(const TypeFunction& f, std::vector<std::vector<double>>& x, const double& t, const double& dt) {
+            // assertion
+            assert(("dt should be greater than 0.0. Did you initialize dt ?", dt > 0.0));
+            // computation
+            std::array<std::vector<std::vector<double>>, 5> k;
+            k[0] = f(x, t);
+            // begin s
+            std::vector<std::vector<double>> s = k[0];
+            for(size_t index = 0; index < k[0].size(); ++index) {
+                TypeView<TypeVector>(s[index].data(), s[index].size()) *= b4[0];
+            }
+            // end s
+            for(size_t i = 1; i < k.size(); ++i) {
+                // begin v 
+                std::vector<std::vector<double>> v = k[0];
+                for(size_t index = 0; index < k[0].size(); ++index) {
+                    TypeView<TypeVector>(v[index].data(), v[index].size()) *= a[i - 1][0];
+                }
+                // end v
+                for(size_t j = 1; j < i; ++j) {
+                    // begin v
+                    for(size_t index = 0; index < k[0].size(); ++index) {
+                        TypeView<TypeVector>(v[index].data(), v[index].size()) += TypeView<TypeVector>(k[j][index].data(), k[j][index].size()) * a[i - 1][j];
+                    }
+                    // end v
+                }
+                // begin v
+                for(size_t index = 0; index < k[0].size(); ++index) {
+                    TypeView<TypeVector>(v[index].data(), v[index].size()) = TypeView<TypeVector>(x[index].data(), x[index].size()) + TypeView<TypeVector>(v[index].data(), v[index].size()) * dt;
+                }
+                // end v
+                k[i] = f(v, t + c[i] * dt);
+                // begin s
+                for(size_t index = 0; index < k[0].size(); ++index) {
+                    TypeView<TypeVector>(s[index].data(), s[index].size()) += TypeView<TypeVector>(k[i][index].data(), k[i][index].size()) * b4[i];
+                }
+                // end s
+            }
+            // begin x
+            for(size_t index = 0; index < k[0].size(); ++index) {
+                TypeView<TypeVector>(x[index].data(), x[index].size()) += TypeView<TypeVector>(s[index].data(), s[index].size()) * dt;
+            }
+            // end x
         }
 };
 
